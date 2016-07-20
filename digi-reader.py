@@ -17,6 +17,7 @@ from provider.mouser import *
 
 if __name__ == "__main__":
 	for line in sys.stdin:
+		sys.stderr.write('\n\n-------------------------------------\n')
 
 		# don't read commented lines
 		if line.strip()[0] == '#':
@@ -24,7 +25,7 @@ if __name__ == "__main__":
 
 		d = None
 		# parse barcode 1786439000000040970571
-		sys.stderr.write('info: code read: {}\n'.format(line))
+		sys.stderr.write('info: code read: {}'.format(line))
 
 		if len(line) == 23: # digikey bag code
 			prod_id = line[0:7]
