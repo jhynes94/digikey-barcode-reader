@@ -1,33 +1,10 @@
 from bs4 import BeautifulSoup
 
+#Run Command:      type input_file.txt | python digi-reader.py >> output.csv
+
 import urllib2
 import urllib
 import sys
-
-def id2digi_pn(prod_id):
-
-	try:
-		url="https://startpage.com/do/search"
-		data = urllib.urlencode({'query' : 'site:www.digikey.com {}'.format(prod_id)})
-		req = urllib2.Request(url, headers={'User-Agent' : "electronic-parser"}, data=data)
-		page = urllib2.urlopen(req)
-
-		soup = BeautifulSoup(page.read(), 'html.parser')
-		u=soup.find_all('div',id='first-result')
-
-		#print "h3(r)", u
-		#[<h3 class="r"><a href="/url?q=http://www.digikey.it/product-detail/it/GRPB031VWVN-RC/S9014E-03-ND/1786439&amp;sa=U&amp;ei=B66WVfPZOMursAGTxoDIDQ&amp;ved=0CCsQFjAA&amp;usg=AFQjCNGcHGKcXod2fw4CWYyhglKdQPpFXQ">S9014E-03-ND - <b>Digikey</b></a></h3>]
-
-		#print u[0].a['href']
-		#/url?q=http://www.digikey.it/product-detail/it/GRPB031VWVN-RC/S9014E-03-ND/1786439&sa=U&ei=7LCWVcewNoPIyAPox4G4Aw&ved=0CCwQFjAA&usg=AFQjCNGrvndBviWTutyW_mT6MarGdlJV7w
-		#sys.stderr.write('info: {}'.format(u[0].a['href']))
-		digiKey_PN = u[0].a['href'].split('/')[-2]
-
-		#Return URL
-		return u[0].a['href']
-	except Exception as e:
-		sys.stderr.write('error: analizing code: {} reason: {}, u: {}\n'.format(prod_id, e, u))
-		return None
 
 def digikey2data(digi_pn):
 
@@ -43,19 +20,6 @@ def digikey2data(digi_pn):
 
 			description = u[0].find_all('td', itemprop="description")[0].contents[0].replace("\n", "").encode('ascii', 'ignore').strip()
 
-			#desList = list(description)
-			#Remove beginning Spaces
-			#for index in range(0, len(desList)-1):
-   			#	if desList[index] == " ":
-			#		del desList[index]
-			#	else:
-			#		sys.stderr.write('What Stopped it: {}\n'.format("".join(desList)))
-			#		break;
-			#description = "".join(desList)
-			#Remove ending Spaces
-
-
-
 			data = {
 				"provider": 'digikey',
 				"provider_pn": digi_pn.split('/')[-2],
@@ -66,3 +30,54 @@ def digikey2data(digi_pn):
 	except Exception as e:
 		sys.stderr.write('error: reading digikey page for {} reason: {}\n'.format(digi_pn, e))
 		return None
+
+
+def barcode2data(barcode):
+
+	data = None
+
+	try:
+		if barcode is not None:
+			digi_url = digi_url = "http://www.digikey.com/product-detail/en/x/x/{}".format(barcode)
+			req2 = urllib2.Request(digi_url, headers={'User-Agent' : "electronic-parser"})
+			page2 = urllib2.urlopen(req2)
+			soup2 = BeautifulSoup(page2.read(), 'html.parser')
+			u = soup2.find_all('table', id='product-details')
+
+			DigiPN = u[0].find("td", id="reportPartNumber").get_text().encode('ascii', 'ignore').strip().replace("\n", "")
+
+			data = {
+				"provider": 'digikey',
+				"provider_pn": DigiPN,
+				"manufacturer_pn": u[0].find_all('h1', itemprop="model")[0].contents[0].replace(" ", "").replace("\n", "").encode('ascii', 'ignore'),
+				"description": u[0].find_all('td', itemprop="description")[0].contents[0].replace("\n", "").encode('ascii', 'ignore').strip()
+			}
+			return data
+	except Exception as e:
+			data = None
+
+			barcode = barcode + "0"
+
+			try:
+				if barcode is not None:
+					digi_url = digi_url = "http://www.digikey.com/product-detail/en/x/x/{}".format(barcode)
+					req2 = urllib2.Request(digi_url, headers={'User-Agent' : "electronic-parser"})
+					page2 = urllib2.urlopen(req2)
+					soup2 = BeautifulSoup(page2.read(), 'html.parser')
+					u = soup2.find_all('table', id='product-details')
+
+					attributes_dictionary = u[0].find('meta').attrs;
+
+					DigiPN = u[0].find("td", id="reportPartNumber").get_text().encode('ascii', 'ignore').strip().replace("\n", "")
+					#sys.stderr.write('PN: {}'.format(DigiPN))
+
+					data = {
+						"provider": 'digikey',
+						"provider_pn": DigiPN,
+						"manufacturer_pn": u[0].find_all('h1', itemprop="model")[0].contents[0].replace(" ", "").replace("\n", "").encode('ascii', 'ignore'),
+						"description": u[0].find_all('td', itemprop="description")[0].contents[0].replace("\n", "").encode('ascii', 'ignore').strip()
+					}
+					return data
+			except Exception as e:
+				sys.stderr.write('error: reading digikey page for {} reason: {}\n'.format(barcode, e))
+				return None

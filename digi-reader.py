@@ -45,8 +45,7 @@ if __name__ == "__main__":
 				prod_id = "".join(newList)
 				sys.stderr.write('info: String front popped: {}\n'.format(prod_id))
 
-
-			d = digikey2data(id2digi_pn(prod_id))
+			d = barcode2data(prod_id)
 		elif '-ND' in line: # digikey part/number
 			d = digikey2data(line.strip())
 		elif '-' in line:	# mouser code
